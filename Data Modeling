@@ -1,2 +1,180 @@
+#Conceptual Model
+Identifying the entity and their relationships using an ER diagram with draw.io
+
+#Logical Model
+Identifying the data type for each attribute ie. string, date etc., and clearly defining each table and their relationship ie. one to many, many to many, etc. 
+One user can have many receipts, but each receipt is unique to a specific user. 
+One receipt can have many items, but each item is unique to a specific receipt.
+Many items can have different brands, and many brands can have different items. 
+One receipt can have many points, and one user can have many points.
+
+#Physical Model
+Using MySQL to create an EER Diagram
+
+#Database Creation
+-- MySQL Workbench Forward Engineering
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+-- -----------------------------------------------------
+-- Schema fetchRewards
+-- -----------------------------------------------------
+
+-- -----------------------------------------------------
+-- Schema fetchRewards
+-- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `fetchRewards` DEFAULT CHARACTER SET utf8 ;
+USE `fetchRewards` ;
+
+-- -----------------------------------------------------
+-- Table `fetchRewards`.`users`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fetchRewards`.`users` (
+  `user_id` INT NOT NULL AUTO_INCREMENT,
+  `first_name` VARCHAR(50) NOT NULL,
+  `last_name` VARCHAR(50) NOT NULL,
+  `state` VARCHAR(50) NOT NULL,
+  `date_registered` DATETIME NOT NULL,
+  `role` VARCHAR(50) NULL,
+  PRIMARY KEY (`user_id`))
+ENGINE = InnoDB;
 
 
+-- -----------------------------------------------------
+-- Table `fetchRewards`.`receipts`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fetchRewards`.`receipts` (
+  `receipt_id` INT NOT NULL AUTO_INCREMENT,
+  `user_id` INT NOT NULL,
+  `create_date` DATETIME NOT NULL,
+  `date_scanned` DATETIME NOT NULL,
+  `finished_date` DATETIME NOT NULL,
+  `modify_date` DATETIME NOT NULL,
+  `rewards_receipt_status` DATETIME NOT NULL,
+  `total_spent` DECIMAL(5,2) NOT NULL,
+  PRIMARY KEY (`receipt_id`),
+  INDEX `fk_receipts_users1_idx` (`user_id` ASC) VISIBLE,
+  CONSTRAINT `fk_receipts_users1`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `fetchRewards`.`users` (`user_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `fetchRewards`.`category`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fetchRewards`.`category` (
+  `category_id` INT NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(255) NULL,
+  `cpg` VARCHAR(255) NULL,
+  PRIMARY KEY (`category_id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `fetchRewards`.`items`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fetchRewards`.`items` (
+  `item_id` INT NOT NULL AUTO_INCREMENT,
+  `receipt_id` INT NOT NULL,
+  `category_id` INT NOT NULL,
+  `name` VARCHAR(255) NOT NULL,
+  `barcode` VARCHAR(255) NULL,
+  `purchased_date` DATETIME NULL,
+  `purchased_item_count` INT NULL,
+  PRIMARY KEY (`item_id`),
+  INDEX `fk_items_receipts1_idx` (`receipt_id` ASC) VISIBLE,
+  INDEX `fk_items_category1_idx` (`category_id` ASC) VISIBLE,
+  CONSTRAINT `fk_items_receipts1`
+    FOREIGN KEY (`receipt_id`)
+    REFERENCES `fetchRewards`.`receipts` (`receipt_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_items_category1`
+    FOREIGN KEY (`category_id`)
+    REFERENCES `fetchRewards`.`category` (`category_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `fetchRewards`.`points`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fetchRewards`.`points` (
+  `users_id` INT NOT NULL,
+  `receipt_id` INT NOT NULL,
+  `points_awarded_date` DATETIME NOT NULL,
+  `points_earned` INT NOT NULL,
+  `bonus_points_earned` INT NOT NULL,
+  `bonus_points_earned_reason` VARCHAR(255) NOT NULL,
+  INDEX `fk_points_users_idx` (`users_id` ASC) VISIBLE,
+  INDEX `fk_points_receipts1_idx` (`receipt_id` ASC) VISIBLE,
+  PRIMARY KEY (`users_id`, `receipt_id`),
+  CONSTRAINT `fk_points_users`
+    FOREIGN KEY (`users_id`)
+    REFERENCES `fetchRewards`.`users` (`user_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_points_receipts1`
+    FOREIGN KEY (`receipt_id`)
+    REFERENCES `fetchRewards`.`receipts` (`receipt_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `fetchRewards`.`brand`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fetchRewards`.`brand` (
+  `brand_id` INT NOT NULL AUTO_INCREMENT,
+  `name` INT NOT NULL,
+  PRIMARY KEY (`brand_id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `fetchRewards`.`items_and_brands`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fetchRewards`.`items_and_brands` (
+  `item_id` INT NOT NULL,
+  `brand_id` INT NOT NULL,
+  INDEX `fk_items_has_brands_brands1_idx` (`brand_id` ASC) VISIBLE,
+  INDEX `fk_items_has_brands_items1_idx` (`item_id` ASC) VISIBLE,
+  PRIMARY KEY (`brand_id`, `item_id`),
+  CONSTRAINT `fk_items_has_brands_items1`
+    FOREIGN KEY (`item_id`)
+    REFERENCES `fetchRewards`.`items` (`item_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_items_has_brands_brands1`
+    FOREIGN KEY (`brand_id`)
+    REFERENCES `fetchRewards`.`brand` (`brand_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `fetchRewards`.`brand_status`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fetchRewards`.`brand_status` (
+  `brand_id` INT NOT NULL,
+  `top_brand` VARCHAR(50) NOT NULL,
+  PRIMARY KEY (`brand_id`),
+  CONSTRAINT `fk_brand_status_brand1`
+    FOREIGN KEY (`brand_id`)
+    REFERENCES `fetchRewards`.`brand` (`brand_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
